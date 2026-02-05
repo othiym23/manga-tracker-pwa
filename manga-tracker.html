@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>漫画コレクション</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #151515;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #606060;
+            --accent: #d4af37;
+            --accent-dim: #8b7529;
+            --border: #2a2a2a;
+            --status-want: #c77dff;
+            --status-pending: #f72585;
+            --status-queued: #4895ef;
+            --status-purchased: #06d6a0;
+            --status-shelved: #ffd60a;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .header-content {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .app-title {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+            transition: all 0.3s ease;
+        }
+
+        .sync-indicator.online {
+            background: var(--status-purchased);
+            box-shadow: 0 0 8px var(--status-purchased);
+        }
+
+        .sync-indicator.syncing {
+            background: var(--status-pending);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Filters */
+        .filters {
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-family: 'Noto Sans JP', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-dim);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .filter-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filter-tags::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-tag {
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tag.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        /* Volume List */
+        .volume-list {
+            padding: 0 0 80px 0;
+        }
+
+        .publisher-group {
+            margin-bottom: 24px;
+        }
+
+        .publisher-header {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 61px;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .publisher-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .imprint-group {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .imprint-header {
+            padding: 8px 20px;
+            background: var(--bg-card);
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .volume-card {
+            padding: 16px 20px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+
+        .volume-card:active {
+            background: var(--bg-card);
+        }
+
+        .volume-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .volume-thumbnail {
+            width: 48px;
+            height: 68px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .volume-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .volume-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .volume-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .volume-date {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+        }
+
+        .status-badge.want { background: var(--status-want); color: var(--bg-primary); }
+        .status-badge.pending { background: var(--status-pending); color: white; }
+        .status-badge.queued { background: var(--status-queued); color: white; }
+        .status-badge.purchased { background: var(--status-purchased); color: var(--bg-primary); }
+        .status-badge.shelved { background: var(--status-shelved); color: var(--bg-primary); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .modal-close {
+            font-size: 28px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-family: 'Noto Sans JP', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .action-btn.primary:active {
+            background: var(--accent-dim);
+        }
+
+        .action-btn.secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .modal-cover {
+            width: 100%;
+            aspect-ratio: 5/7;
+            object-fit: contain;
+            background: var(--bg-secondary);
+        }
+
+        .modal-logotype {
+            width: 100%;
+            padding: 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-logotype img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .modal-details {
+            padding: 20px;
+        }
+
+        .detail-row {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        /* Loading */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Error */
+        .error-banner {
+            position: fixed;
+            top: 61px;
+            left: 0;
+            right: 0;
+            background: var(--status-pending);
+            color: white;
+            padding: 12px 20px;
+            font-size: 14px;
+            z-index: 1500;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .error-banner.active {
+            transform: translateY(0);
+        }
+
+        /* Fab */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Status selector */
+        .status-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .status-option {
+            padding: 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .status-option:active {
+            transform: scale(0.98);
+        }
+
+        .status-option.selected {
+            border-color: var(--accent);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .status-option-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">データを読み込んでいます...</div>
+    </div>
+
+    <!-- Error Banner -->
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="app-title">漫画コレクション</div>
+            <div class="sync-status">
+                <div class="sync-indicator" id="syncIndicator"></div>
+                <span id="syncText">オフライン</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <input type="text" class="search-box" id="searchBox" placeholder="タイトル、作家で検索...">
+        <div class="filter-tags">
+            <div class="filter-tag active" data-status="want,pending">欲しい & 予約中</div>
+            <div class="filter-tag" data-status="queued">待機中</div>
+            <div class="filter-tag" data-status="purchased">購入済み</div>
+            <div class="filter-tag" data-status="shelved">本棚</div>
+            <div class="filter-tag" data-status="all">全て</div>
+        </div>
+    </div>
+
+    <!-- Volume List -->
+    <div class="volume-list" id="volumeList">
+        <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <div>データを読み込んでいます...</div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-close" id="modalClose">×</div>
+                <div class="modal-actions">
+                    <button class="action-btn secondary" id="changeStatusBtn">ステータス変更</button>
+                </div>
+            </div>
+            <img class="modal-cover" id="modalCover" alt="">
+            <div class="modal-logotype" id="modalLogotypeContainer" style="display: none;">
+                <img id="modalLogotype" alt="">
+            </div>
+            <div class="modal-details" id="modalDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            baseId: 'appDCtBuhlAhROSVT',
+            tableName: '漫画の間',
+            apiToken: 'patsLWHbDZQMklLXI.c2420ed71d17bfbdb3a15862345b77696755e8530971548c4c212aff11b0ed6b',
+            storageKey: 'mangaTrackerData',
+            lastSyncKey: 'mangaTrackerLastSync'
+        };
+
+        // State
+        let allRecords = [];
+        let filteredRecords = [];
+        let currentFilter = ['want', 'pending'];
+        let searchQuery = '';
+        let selectedRecord = null;
+        let syncQueue = [];
+
+        // IndexedDB setup
+        const dbPromise = openDatabase();
+
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MangaTrackerDB', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('volumes')) {
+                        db.createObjectStore('volumes', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('syncQueue')) {
+                        db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        // IndexedDB operations
+        async function saveToIndexedDB(records) {
+            const db = await dbPromise;
+            const tx = db.transaction('volumes', 'readwrite');
+            const store = tx.objectStore('volumes');
+            
+            for (const record of records) {
+                await store.put(record);
+            }
+            
+            return tx.complete;
+        }
+
+        async function loadFromIndexedDB() {
+            const db = await dbPromise;
+            const tx = db.transaction('volumes', 'readonly');
+            const store = tx.objectStore('volumes');
+            const request = store.getAll();
+            
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function addToSyncQueue(update) {
+            const db = await dbPromise;
+            const tx = db.transaction('syncQueue', 'readwrite');
+            const store = tx.objectStore('syncQueue');
+            await store.add(update);
+            syncQueue.push(update);
+        }
+
+        async function loadSyncQueue() {
+            const db = await dbPromise;
+            const tx = db.transaction('syncQueue', 'readonly');
+            const store = tx.objectStore('syncQueue');
+            const request = store.getAll();
+            
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => {
+                    syncQueue = request.result;
+                    resolve(syncQueue);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function clearSyncQueue() {
+            const db = await dbPromise;
+            const tx = db.transaction('syncQueue', 'readwrite');
+            const store = tx.objectStore('syncQueue');
+            await store.clear();
+            syncQueue = [];
+        }
+
+        // Airtable API
+        async function fetchFromAirtable() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(CONFIG.tableName)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiToken}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Airtable API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.records;
+        }
+
+        async function updateRecordInAirtable(recordId, fields) {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(CONFIG.tableName)}/${recordId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fields })
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Failed to update record: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+
+        // Sync logic
+        async function syncData() {
+            try {
+                updateSyncStatus('syncing');
+                
+                // Fetch from Airtable
+                const records = await fetchFromAirtable();
+                allRecords = records;
+                
+                // Save to IndexedDB
+                await saveToIndexedDB(records);
+                
+                // Process sync queue
+                if (syncQueue.length > 0) {
+                    for (const update of syncQueue) {
+                        await updateRecordInAirtable(update.recordId, update.fields);
+                    }
+                    await clearSyncQueue();
+                }
+                
+                localStorage.setItem(CONFIG.lastSyncKey, new Date().toISOString());
+                updateSyncStatus('online');
+                
+                return records;
+            } catch (error) {
+                console.error('Sync error:', error);
+                updateSyncStatus('offline');
+                throw error;
+            }
+        }
+
+        async function loadData() {
+            try {
+                // Try to load from IndexedDB first
+                const cachedRecords = await loadFromIndexedDB();
+                if (cachedRecords.length > 0) {
+                    allRecords = cachedRecords;
+                    renderVolumes();
+                }
+                
+                // Try to sync with Airtable
+                if (navigator.onLine) {
+                    await syncData();
+                    renderVolumes();
+                } else {
+                    updateSyncStatus('offline');
+                }
+                
+                // Load pending sync queue
+                await loadSyncQueue();
+                
+            } catch (error) {
+                console.error('Load error:', error);
+                showError('データの読み込みに失敗しました');
+                updateSyncStatus('offline');
+            } finally {
+                document.getElementById('loadingScreen').style.display = 'none';
+            }
+        }
+
+        // UI updates
+        function updateSyncStatus(status) {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            indicator.className = 'sync-indicator';
+            
+            if (status === 'online') {
+                indicator.classList.add('online');
+                text.textContent = 'オンライン';
+            } else if (status === 'syncing') {
+                indicator.classList.add('syncing');
+                text.textContent = '同期中...';
+            } else {
+                text.textContent = 'オフライン';
+            }
+        }
+
+        function showError(message) {
+            const banner = document.getElementById('errorBanner');
+            banner.textContent = message;
+            banner.classList.add('active');
+            setTimeout(() => banner.classList.remove('active'), 3000);
+        }
+
+        function filterRecords() {
+            let records = allRecords;
+            
+            // Filter by status
+            if (currentFilter[0] !== 'all') {
+                records = records.filter(r => 
+                    currentFilter.includes(r.fields.status?.toLowerCase())
+                );
+            }
+            
+            // Filter by search
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                records = records.filter(r => {
+                    const title = r.fields['タイトル']?.toLowerCase() || '';
+                    const creator = r.fields['漫画家の音読み']?.toLowerCase() || '';
+                    return title.includes(query) || creator.includes(query);
+                });
+            }
+            
+            // Sort by publisher, imprint, creator
+            records.sort((a, b) => {
+                const pubA = a.fields['imprint publisher']?.[0] || '';
+                const pubB = b.fields['imprint publisher']?.[0] || '';
+                if (pubA !== pubB) return pubA.localeCompare(pubB);
+                
+                const impA = a.fields['インプリント']?.[0] || '';
+                const impB = b.fields['インプリント']?.[0] || '';
+                if (impA !== impB) return impA.localeCompare(impA);
+                
+                const creA = a.fields['漫画家の音読み']?.[0] || '';
+                const creB = b.fields['漫画家の音読み']?.[0] || '';
+                return creA.localeCompare(creB);
+            });
+            
+            filteredRecords = records;
+        }
+
+        function renderVolumes() {
+            filterRecords();
+            
+            const container = document.getElementById('volumeList');
+            
+            if (filteredRecords.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <div>該当する巻が見つかりません</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Group by publisher and imprint
+            const grouped = {};
+            filteredRecords.forEach(record => {
+                const pub = record.fields['imprint publisher']?.[0] || '不明な出版社';
+                const imp = record.fields['インプリント']?.[0] || '不明なインプリント';
+                
+                if (!grouped[pub]) grouped[pub] = {};
+                if (!grouped[pub][imp]) grouped[pub][imp] = [];
+                grouped[pub][imp].push(record);
+            });
+            
+            let html = '';
+            
+            for (const [publisher, imprints] of Object.entries(grouped)) {
+                html += `
+                    <div class="publisher-group">
+                        <div class="publisher-header">
+                            <div class="publisher-name">${publisher}</div>
+                        </div>
+                `;
+                
+                for (const [imprint, volumes] of Object.entries(imprints)) {
+                    html += `
+                        <div class="imprint-group">
+                            <div class="imprint-header">${imprint}</div>
+                    `;
+                    
+                    volumes.forEach(volume => {
+                        const cover = volume.fields.cover?.[0]?.thumbnails?.large?.url || '';
+                        const title = volume.fields['タイトル'] || '無題';
+                        const creator = volume.fields['漫画家の音読み']?.[0] || '';
+                        const date = volume.fields['release date'] || '';
+                        const status = volume.fields.status || 'unknown';
+                        
+                        html += `
+                            <div class="volume-card" data-id="${volume.id}">
+                                <div class="volume-header">
+                                    ${cover ? `<img src="${cover}" class="volume-thumbnail" alt="">` : '<div class="volume-thumbnail"></div>'}
+                                    <div class="volume-info">
+                                        <div class="volume-title">${title}</div>
+                                        <div class="volume-meta">${creator}</div>
+                                        <div class="volume-date">${date}</div>
+                                        <span class="status-badge ${status.toLowerCase()}">${status}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            }
+            
+            container.innerHTML = html;
+            
+            // Add click handlers
+            document.querySelectorAll('.volume-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const recordId = card.dataset.id;
+                    const record = allRecords.find(r => r.id === recordId);
+                    if (record) openModal(record);
+                });
+            });
+        }
+
+        function openModal(record) {
+            selectedRecord = record;
+            const modal = document.getElementById('modalOverlay');
+            const cover = document.getElementById('modalCover');
+            const logotypeContainer = document.getElementById('modalLogotypeContainer');
+            const logotype = document.getElementById('modalLogotype');
+            const details = document.getElementById('modalDetails');
+            
+            // Set cover
+            cover.src = record.fields.cover?.[0]?.url || '';
+            
+            // Set logotype
+            if (record.fields['imprint logotype']?.[0]?.url) {
+                logotypeContainer.style.display = 'block';
+                logotype.src = record.fields['imprint logotype'][0].url;
+            } else {
+                logotypeContainer.style.display = 'none';
+            }
+            
+            // Set details
+            const detailsHtml = `
+                <div class="detail-row">
+                    <div class="detail-label">タイトル</div>
+                    <div class="detail-value">${record.fields['タイトル'] || '—'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">作家</div>
+                    <div class="detail-value">${record.fields['漫画家の音読み']?.[0] || '—'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">発売日</div>
+                    <div class="detail-value">${record.fields['release date'] || '—'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">出版社</div>
+                    <div class="detail-value">${record.fields['imprint publisher']?.[0] || '—'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">インプリント</div>
+                    <div class="detail-value">${record.fields['インプリント']?.[0] || '—'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">ステータス</div>
+                    <div class="detail-value">
+                        <span class="status-badge ${record.fields.status?.toLowerCase()}">${record.fields.status || 'unknown'}</span>
+                    </div>
+                </div>
+            `;
+            
+            details.innerHTML = detailsHtml;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            selectedRecord = null;
+        }
+
+        async function changeStatus() {
+            if (!selectedRecord) return;
+            
+            const statuses = ['want', 'pending', 'queued', 'purchased', 'shelved'];
+            const currentStatus = selectedRecord.fields.status;
+            
+            const options = statuses.map(s => 
+                `<div class="status-option ${s === currentStatus ? 'selected' : ''}" data-status="${s}">
+                    <span class="status-badge ${s}">${s}</span>
+                    <div class="status-option-label">${s.toUpperCase()}</div>
+                </div>`
+            ).join('');
+            
+            const detailsDiv = document.getElementById('modalDetails');
+            const originalContent = detailsDiv.innerHTML;
+            
+            detailsDiv.innerHTML = `
+                <div class="detail-row">
+                    <div class="detail-label">ステータスを選択</div>
+                </div>
+                <div class="status-selector">
+                    ${options}
+                </div>
+            `;
+            
+            const statusOptions = detailsDiv.querySelectorAll('.status-option');
+            statusOptions.forEach(option => {
+                option.addEventListener('click', async () => {
+                    const newStatus = option.dataset.status;
+                    
+                    try {
+                        // Update locally
+                        selectedRecord.fields.status = newStatus;
+                        
+                        // Save to IndexedDB
+                        await saveToIndexedDB([selectedRecord]);
+                        
+                        // Queue for sync
+                        await addToSyncQueue({
+                            recordId: selectedRecord.id,
+                            fields: { status: newStatus }
+                        });
+                        
+                        // Try to sync immediately if online
+                        if (navigator.onLine) {
+                            try {
+                                await updateRecordInAirtable(selectedRecord.id, { status: newStatus });
+                                await clearSyncQueue();
+                            } catch (error) {
+                                console.error('Sync failed, queued for later:', error);
+                            }
+                        }
+                        
+                        // Update UI
+                        renderVolumes();
+                        closeModal();
+                        
+                    } catch (error) {
+                        console.error('Status update error:', error);
+                        showError('ステータスの更新に失敗しました');
+                    }
+                });
+            });
+        }
+
+        // Event listeners
+        document.getElementById('modalClose').addEventListener('click', closeModal);
+        document.getElementById('changeStatusBtn').addEventListener('click', changeStatus);
+        
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') closeModal();
+        });
+        
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderVolumes();
+        });
+        
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                
+                const statuses = tag.dataset.status;
+                currentFilter = statuses === 'all' ? ['all'] : statuses.split(',');
+                renderVolumes();
+            });
+        });
+        
+        // Online/offline detection
+        window.addEventListener('online', async () => {
+            updateSyncStatus('syncing');
+            try {
+                await syncData();
+                renderVolumes();
+            } catch (error) {
+                console.error('Sync on online failed:', error);
+            }
+        });
+        
+        window.addEventListener('offline', () => {
+            updateSyncStatus('offline');
+        });
+        
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
