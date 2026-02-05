@@ -1,8 +1,10 @@
 {
   "name": "漫画コレクション",
+  "version": "0.1.0",
+  "manifest_version": 2,
   "short_name": "漫画",
   "description": "Japanese manga collection tracker for serious collectors",
-  "start_url": "/manga-tracker.html",
+  "start_url": "/manga-tracker-pwa/manga-tracker.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
